@@ -10,6 +10,7 @@ import { AppText } from '../design-system/components';
 
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { FocusScreen } from '../screens/FocusScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -48,6 +49,15 @@ export const MainNavigator = () => {
                 options={{
                     tabBarIcon: ({ color, size }) => (
                         <MaterialIcons name="bar-chart" size={size} color={color} />
+                    )
+                }}
+            />
+            <Tab.Screen
+                name="Enfoque"
+                component={FocusScreen}
+                options={{
+                    tabBarIcon: ({ color, size }) => (
+                        <MaterialIcons name="menu-book" size={size} color={color} />
                     )
                 }}
             />

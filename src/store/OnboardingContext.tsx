@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-type Objective = 'energy' | 'calm' | 'focus' | 'sleep' | 'fitness' | 'consistency';
+// Simplified to string to allow dynamic DB expansion
+type Objective = string;
 
 interface OnboardingData {
     objective: Objective | null;

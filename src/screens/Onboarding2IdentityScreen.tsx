@@ -11,7 +11,8 @@ import { useObjectives, ObjectiveDefinition } from '../hooks/useCatalog';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding2Identity'>;
 
-type Intent = 'energy' | 'calm' | 'focus' | 'sleep' | 'fitness' | 'consistency';
+// Removed hardcoded Intent type to support dynamic DB objectives
+// type Intent = 'energy' | 'calm' | 'focus' | 'sleep' | 'fitness' | 'consistency';
 
 
 

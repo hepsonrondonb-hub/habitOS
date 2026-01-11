@@ -12,6 +12,8 @@ import { ObjectiveSelector } from '../design-system/components/Selectors/Objecti
 import { TrendSummaryCard } from '../design-system/components/Composites/TrendSummaryCard';
 import { SignalCard } from '../design-system/components/Composites/SignalCard';
 import { useProgressData } from '../hooks/useProgressData';
+import { InfoModal } from '../design-system/components/Modals';
+import { TouchableOpacity } from 'react-native';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -42,6 +44,8 @@ export const ProgressScreen = () => {
     // Or just treat the hook's return as the source of truth for "active".
     const activeId = selectedObjectiveId && objectives.find(o => o.id === selectedObjectiveId) ? selectedObjectiveId : (hookSelectedId || '');
 
+    const [showHelp, setShowHelp] = useState(false);
+
     return (
         <AppScreen safeArea backgroundColor={colors.background}>
             {/* Header */}
@@ -52,7 +56,9 @@ export const ProgressScreen = () => {
                         Entiende cómo va tu proceso
                     </AppText>
                 </View>
-                <MaterialIcons name="help-outline" size={24} color={colors.textSecondary} />
+                <TouchableOpacity onPress={() => setShowHelp(true)}>
+                    <MaterialIcons name="help-outline" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
             </View>
 
             {/* Objective Selector */}
@@ -124,6 +130,28 @@ export const ProgressScreen = () => {
                     </>
                 )}
             </ScrollView>
+
+            <InfoModal
+                visible={showHelp}
+                onClose={() => setShowHelp(false)}
+                title="Cómo leer tu progreso"
+                content={`Este módulo no evalúa resultados ni cumplimiento.
+
+Aquí observamos tendencias, no días individuales.
+
+Las acciones muestran lo que intentas hacer.
+Las señales muestran si algo empieza a cambiar con el tiempo.
+
+Cuando ves mensajes como 'aún sin patrón claro',
+significa que todavía estamos reuniendo información,
+no que estés fallando.
+
+No ver cambios también es información útil.
+Sirve para ajustar el proceso, no para exigirte más.
+
+Usa este espacio para entender tu camino,
+no para juzgarlo.`}
+            />
         </AppScreen>
     );
 };

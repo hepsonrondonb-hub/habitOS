@@ -6,16 +6,20 @@ import { HabitProvider } from './src/store/HabitContext';
 import { AuthProvider } from './src/store/AuthContext';
 import { OnboardingProvider } from './src/store/OnboardingContext';
 
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <OnboardingProvider>
-          <HabitProvider>
-            <RootNavigator />
-          </HabitProvider>
-        </OnboardingProvider>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <OnboardingProvider>
+            <HabitProvider>
+              <RootNavigator />
+            </HabitProvider>
+          </OnboardingProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

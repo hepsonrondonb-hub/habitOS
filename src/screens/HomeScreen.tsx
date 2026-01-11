@@ -159,6 +159,11 @@ export const HomeScreen = () => {
                 );
                 const habitsSnap = await getDocs(habitsQ);
                 const loadedHabits = habitsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Habit[];
+                console.log('DEBUG: Active Objective:', activeObjective.objectiveType, activeObjective.id);
+                console.log('DEBUG: Fetched Habits Count:', loadedHabits.length);
+                if (loadedHabits.length > 0) {
+                    console.log('DEBUG: First Habit:', JSON.stringify(loadedHabits[0], null, 2));
+                }
                 setHabits(loadedHabits);
 
                 // 2. Load Signals (User's specific implementations)
@@ -320,8 +325,12 @@ export const HomeScreen = () => {
         if (!h.frequency || h.frequency.length === 0) return true;
         const jsDay = selectedDate.getDay();
         const appDayIndex = jsDay === 0 ? 6 : jsDay - 1; // Mon=0 ... Sun=6
-        return h.frequency.includes(appDayIndex);
+        const included = h.frequency.includes(appDayIndex);
+        if (!included) console.log(`DEBUG: Hiding habit ${h.name} because today (${appDayIndex}) is not in frequency`, h.frequency);
+        return included;
     });
+
+    console.log('DEBUG: Displayed Habits Count:', displayedHabits.length);
 
     const userName = userProfile?.firstName || userProfile?.name?.split(' ')[0] || user?.displayName?.split(' ')[0] || '';
 

@@ -10,6 +10,8 @@ import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/fire
 import { getAvatarSource } from '../utils/avatars';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
+import { useNotificationScheduler } from '../hooks/useNotifications';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface Plan {
     id: string; // user_objective id
@@ -90,8 +92,20 @@ export const SettingsScreen = () => {
 
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
-    const [dailyReminders, setDailyReminders] = useState(true);
-    const [summaryTime, setSummaryTime] = useState('20:00');
+
+    // --- NOTIFICATIONS INTEGRATION ---
+    const { isEnabled, scheduledTime, toggleNotifications, updateTime, sendTestNotification } = useNotificationScheduler();
+    const [showDebug, setShowDebug] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+
+    const handleTimeChange = (event: any, selectedDate?: Date) => {
+        setShowTimePicker(false);
+        if (selectedDate) {
+            updateTime(selectedDate);
+        }
+    };
+
+    const formattedTime = `${scheduledTime.getHours().toString().padStart(2, '0')}:${scheduledTime.getMinutes().toString().padStart(2, '0')}`;
 
     // Load plans from Firestore
     useFocusEffect(
@@ -185,7 +199,9 @@ export const SettingsScreen = () => {
                         </View>
                         <View style={{ flex: 1, paddingHorizontal: spacing.md }}>
                             <AppText variant="body" style={{ fontWeight: '700', fontSize: 16 }}>
-                                {userProfile?.name || 'Usuario'}
+                                {userProfile?.firstName && userProfile?.lastName
+                                    ? `${userProfile.firstName} ${userProfile.lastName}`
+                                    : userProfile?.name || user?.displayName || 'Usuario'}
                             </AppText>
                             <AppText variant="caption" color={colors.textSecondary}>
                                 {userProfile?.email || user?.email || ''}
@@ -232,7 +248,10 @@ export const SettingsScreen = () => {
                 </TouchableOpacity>
 
                 {/* Notifications Section */}
-                <AppText variant="subheading" style={[styles.sectionTitle, { marginTop: spacing.xl }]}>Notificaciones</AppText>
+                <TouchableOpacity activeOpacity={0.9} onLongPress={() => setShowDebug(!showDebug)}>
+                    <AppText variant="subheading" style={[styles.sectionTitle, { marginTop: spacing.xl }]}>Notificaciones</AppText>
+                </TouchableOpacity>
+
                 <Card style={styles.settingCard}>
                     <View style={[styles.iconBox, { backgroundColor: '#F3E8FF' }]}>
                         <MaterialIcons name="notifications" size={20} color="#9333EA" />
@@ -242,26 +261,56 @@ export const SettingsScreen = () => {
                         <AppText variant="caption" color={colors.textSecondary}>Te avisaremos para que no olvides</AppText>
                     </View>
                     <Switch
-                        value={dailyReminders}
-                        onValueChange={setDailyReminders}
+                        value={isEnabled}
+                        onValueChange={toggleNotifications}
                         trackColor={{ false: colors.disabled, true: colors.primary }}
                         thumbColor={'#FFFFFF'}
                         ios_backgroundColor={colors.disabled}
                     />
                 </Card>
-                {dailyReminders && (
-                    <Card style={[styles.settingCard, { marginTop: spacing.sm }]}>
-                        <View style={[styles.iconBox, { backgroundColor: '#F3F4F6' }]}>
-                            <MaterialIcons name="schedule" size={20} color={colors.textSecondary} />
-                        </View>
-                        <View style={{ flex: 1, paddingHorizontal: spacing.md }}>
-                            <AppText variant="body" style={{ fontWeight: '600' }}>Hora del resumen</AppText>
-                            <AppText variant="caption" color={colors.textSecondary}>Resumen de tu día</AppText>
-                        </View>
-                        <View style={styles.timeBadge}>
-                            <AppText variant="caption" color="#2563EB" style={{ fontWeight: '700' }}>{summaryTime}</AppText>
-                        </View>
-                    </Card>
+                {isEnabled && (
+                    <>
+                        <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                            <Card style={[styles.settingCard, { marginTop: spacing.sm }]}>
+                                <View style={[styles.iconBox, { backgroundColor: '#F3F4F6' }]}>
+                                    <MaterialIcons name="schedule" size={20} color={colors.textSecondary} />
+                                </View>
+                                <View style={{ flex: 1, paddingHorizontal: spacing.md }}>
+                                    <AppText variant="body" style={{ fontWeight: '600' }}>Hora del resumen</AppText>
+                                    <AppText variant="caption" color={colors.textSecondary}>Resumen de tu día</AppText>
+                                </View>
+                                <View style={styles.timeBadge}>
+                                    <AppText variant="caption" color="#2563EB" style={{ fontWeight: '700' }}>{formattedTime}</AppText>
+                                </View>
+                            </Card>
+                        </TouchableOpacity>
+
+                        {showTimePicker && (
+                            <DateTimePicker
+                                value={scheduledTime}
+                                mode="time"
+                                is24Hour={true}
+                                display="default"
+                                onChange={handleTimeChange}
+                            />
+                        )}
+                    </>
+                )}
+
+                {/* DEBUG PANEL (Hidden) */}
+                {showDebug && (
+                    <View style={{ padding: 20, backgroundColor: '#EEE', marginTop: 20, borderRadius: 8 }}>
+                        <AppText style={{ fontWeight: 'bold', marginBottom: 10 }}>🕵️ Panel de Pruebas (Debug)</AppText>
+                        <TouchableOpacity style={{ padding: 10, backgroundColor: '#DDD', marginBottom: 5 }} onPress={() => sendTestNotification('checkin')}>
+                            <AppText>🔔 Test Check-In</AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ padding: 10, backgroundColor: '#DDD', marginBottom: 5 }} onPress={() => sendTestNotification('presence')}>
+                            <AppText>🔔 Test Presencia</AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ padding: 10, backgroundColor: '#DDD' }} onPress={() => sendTestNotification('weekly_summary')}>
+                            <AppText>🔔 Test Resumen Semanal</AppText>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 {/* Account Section */}

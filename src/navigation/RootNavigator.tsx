@@ -29,6 +29,8 @@ import { SelectAvatarScreen } from '../screens/SelectAvatarScreen';
 import { IdeasScreen } from '../screens/IdeasScreen';
 import { SignalDetailScreen } from '../screens/SignalDetailScreen';
 import { EditPlanScreen } from '../screens/EditPlanScreen';
+import { FocusArticle } from '../data/focusArticles';
+import { ArticleDetailScreen } from '../screens/ArticleDetailScreen';
 
 export type RootStackParamList = {
     // Auth Flow v1
@@ -65,6 +67,7 @@ export type RootStackParamList = {
     SelectAvatar: undefined;
     EditPlan: { planId: string; objectiveName: string };
     Ideas: undefined;
+    ArticleDetail: { article: FocusArticle };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -103,6 +106,7 @@ export const RootNavigator = () => {
                             <Stack.Screen name="EditPlan" component={EditPlanScreen} />
                             <Stack.Screen name="Ideas" component={IdeasScreen} options={{ presentation: 'modal' }} />
                             <Stack.Screen name="SignalDetail" component={SignalDetailScreen} />
+                            <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
 
                             {/* Enable Onboarding screens for "New Plan" flow */}
                             <Stack.Screen name="Onboarding1Positioning" component={Onboarding1PositioningScreen} />
