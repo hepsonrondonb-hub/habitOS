@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =========================================================================
+    // 1. PUBLIC CATALOGS (Objectives, Signals, Actions)
+    // =========================================================================
+    // Read: Allowed for everyone (even before login)
+    // Write: Allowed for authenticated users (to run the Seeding Script)
+    
+    match /objectives/{document} {
+      allow read: if true;
+      allow write: if request.auth != null; 
+    }
+    match /progress_signals_catalog/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /actions_catalog/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // =========================================================================
+    // 2. USER DATA (Private)
+    // =========================================================================
+    
+    // Helper function to check ownership
+    // Ensures a user can only access data where userId matches their own UID
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // A. Users Collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // B. User-Specific Collections
+    // For all these, we verify that the document's 'userId' field matches the requester
+    
+    match /user_objectives/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /habits/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+    }
+    
+    match /habitCompletions/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /streakModals/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /check_ins/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /progress_signals/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /baselines/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /routines/{document} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+    }
+  }
+}
