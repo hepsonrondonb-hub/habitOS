@@ -15,10 +15,8 @@ export const Onboarding1PositioningScreen = () => {
 
     const handleContinue = () => {
         navigation.navigate({
-            name: 'Onboarding2Identity',
-            params: {
-                resultIntent: route.params?.resultIntent
-            }
+            name: 'OnboardingExamples',
+            params: {}
         } as any);
     };
 

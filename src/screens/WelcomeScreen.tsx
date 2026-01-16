@@ -1,69 +1,140 @@
-import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Image, Animated, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { AppScreen, AppText, PrimaryButton, SecondaryButton } from '../design-system/components';
-import { colors, spacing, shadows } from '../design-system/tokens';
-import { MaterialIcons } from '@expo/vector-icons';
+import { AppScreen, AppText, PrimaryButton, SecondaryButton, TrendSummaryCard } from '../design-system/components';
+import { colors, spacing, shadows, radius } from '../design-system/tokens';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+const { width } = Dimensions.get('window');
+
 export const WelcomeScreen = () => {
     const navigation = useNavigation<NavigationProp>();
+
+    // Animation Values
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const heroSlideAnim = useRef(new Animated.Value(40)).current;
+    const bottomSlideAnim = useRef(new Animated.Value(20)).current;
+
+    useEffect(() => {
+        Animated.stagger(200, [
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(heroSlideAnim, {
+                    toValue: 0,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.timing(bottomSlideAnim, {
+                toValue: 0,
+                duration: 800,
+                // tension: 50,
+                // friction: 7,
+                useNativeDriver: true,
+            })
+        ]).start();
+    }, []);
 
     return (
         <AppScreen backgroundColor={colors.background} safeArea>
             <View style={styles.container}>
 
-                {/* 1. Main Centered Content (Logo + Text) */}
-                <View style={styles.contentContainer}>
+                {/* 1. HEADER: Subtle Branding */}
+                <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+                    <Image
+                        source={require('../../assets/avitio-logo-new.png')}
+                        style={{ width: 40, height: 40, marginRight: 8 }}
+                        resizeMode="contain"
+                    />
+                    <AppText variant="heading" style={{ fontSize: 20 }}>Avitio</AppText>
+                </Animated.View>
 
-                    {/* Icon with white background & shadow (Matches HTML p-5 rounded-3xl bg-white shadow) */}
-                    <View style={styles.iconBackground}>
-                        <MaterialIcons name="check-circle" size={56} color={colors.primary} />
+                {/* 2. CENTER: Hero Dashboard Mockup */}
+                <Animated.View
+                    style={[
+                        styles.heroContainer,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ translateY: heroSlideAnim }]
+                        }
+                    ]}
+                >
+                    <View style={styles.phoneFrame}>
+                        {/* Status Bar Decor */}
+                        <View style={styles.notch} />
+
+                        {/* Fake Dashboard Content */}
+                        <View style={styles.mockupContent}>
+                            <AppText variant="caption" color={colors.textSecondary} style={{ marginBottom: 16 }}>
+                                MI PROGRESO HOY
+                            </AppText>
+
+                            <TrendSummaryCard
+                                title="Productividad"
+                                description="Estás en racha. +12% vs semana pasada."
+                                progress={78}
+                            />
+
+                            <TrendSummaryCard
+                                title="Enfoque Mental"
+                                description="2 sesiones profundas completadas."
+                                progress={100}
+                            />
+                        </View>
                     </View>
+                </Animated.View>
 
-                    {/* Title (Matches HTML text-[42px] font-extrabold) */}
-                    <View style={styles.titleRow}>
-                        <AppText variant="heading" style={styles.titleText}>Habit</AppText>
-                        <AppText variant="heading" style={[styles.titleText, { color: colors.primary }]}>OS</AppText>
-                    </View>
-
-                    {/* Subtitle */}
-                    <AppText variant="body" style={styles.subtitle}>
-                        Construye hábitos,{'\n'}un día a la vez.
+                {/* 3. BOTTOM: Value Prop & Actions */}
+                <Animated.View
+                    style={[
+                        styles.bottomSection,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ translateY: bottomSlideAnim }]
+                        }
+                    ]}
+                >
+                    <AppText variant="heading" style={styles.tagline}>
+                        Construye la vida que deseas.
                     </AppText>
 
-                </View>
+                    <AppText
+                        variant="body"
+                        color={colors.textSecondary}
+                        style={styles.subTagline}
+                    >
+                        Tus hábitos, objetivos y evolución en un solo lugar.
+                    </AppText>
 
-                {/* 2. Bottom Section (Buttons + Footer) */}
-                <View style={styles.bottomSection}>
                     <View style={styles.actionsContainer}>
                         <PrimaryButton
-                            label="Registrarse"
+                            label="Empezar ahora"
                             onPress={() => navigation.navigate('Onboarding1Positioning')}
                             style={styles.button}
                         />
 
-                        <View style={{ height: 16 }} />
+                        <View style={{ height: 12 }} />
 
                         <PrimaryButton
-                            label="Iniciar sesión"
-                            variant="surface"
+                            label="Ya tengo una cuenta"
+                            variant="text"
                             onPress={() => navigation.navigate('EmailLogin')}
                             style={styles.button}
                         />
                     </View>
 
                     {/* Footer */}
-                    <View style={styles.footer}>
-                        <AppText variant="caption" color={colors.textSecondary} centered>
-                            Al continuar, aceptas nuestros{'\n'}
-                            <AppText variant="caption" style={{ fontWeight: '600' }}>Términos y Privacidad</AppText>
-                        </AppText>
-                    </View>
-                </View>
+                    <AppText variant="caption" color={colors.textSecondary} centered style={{ opacity: 0.6 }}>
+                        Al continuar, aceptas nuestros Términos.
+                    </AppText>
+                </Animated.View>
 
             </View>
         </AppScreen>
@@ -73,54 +144,76 @@ export const WelcomeScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: spacing.lg,
-        justifyContent: 'space-between', // Push Content up, Buttons down
+        justifyContent: 'space-between',
+        paddingVertical: spacing.md,
     },
-    contentContainer: {
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.lg,
+    },
+    heroContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        width: '100%',
-        paddingBottom: spacing.xxl, // Visual offset to not center exactly, but slightly higher
+        marginVertical: spacing.md,
     },
-    iconBackground: {
+    phoneFrame: {
+        width: width * 0.75,
+        height: 380, // Fixed height for proportionality
+        backgroundColor: colors.background, // Or surface
+        borderRadius: 32,
+        borderWidth: 6,
+        borderColor: colors.surface, // Frame color
+        ...shadows.lg, // Deep shadow for "floating" effect
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    notch: {
+        position: 'absolute',
+        top: 0,
+        alignSelf: 'center',
+        width: '40%',
+        height: 24,
         backgroundColor: colors.surface,
-        borderRadius: 24, // rounded-3xl
-        padding: 20, // p-5
-        marginBottom: 32, // mb-8
-        ...shadows.md,
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
+        zIndex: 10,
     },
-    titleRow: {
-        flexDirection: 'row',
-        marginBottom: 16, // mb-4
-    },
-    titleText: {
-        fontSize: 42, // text-[42px]
-        fontWeight: '800', // font-extrabold
-        letterSpacing: -1,
-        lineHeight: 44, // leading-tight
-    },
-    subtitle: {
-        textAlign: 'center',
-        fontSize: 20, // text-xl
-        lineHeight: 30, // leading-relaxed
-        color: colors.textSecondary,
-        maxWidth: 280, // max-w-[280px]
+    mockupContent: {
+        flex: 1,
+        backgroundColor: '#F8F9FA', // Slightly different bg inside phone
+        padding: spacing.md,
+        paddingTop: 40, // Space for notch
     },
     bottomSection: {
-        width: '100%',
-        paddingBottom: 32, // pb-8
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.lg,
+        alignItems: 'center',
+    },
+    tagline: {
+        fontSize: 28,
+        fontWeight: '700',
+        textAlign: 'center',
+        marginBottom: spacing.xs,
+        lineHeight: 34,
+        color: colors.textPrimary,
+    },
+    subTagline: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: spacing.xl,
+        maxWidth: 300,
+        lineHeight: 24,
     },
     actionsContainer: {
         width: '100%',
-        marginBottom: 32,
+        marginBottom: spacing.lg,
     },
     button: {
         width: '100%',
-        height: 56, // h-14
+        height: 54,
     },
-    footer: {
-        alignItems: 'center',
-        width: '100%',
-    }
 });

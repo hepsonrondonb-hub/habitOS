@@ -3,11 +3,12 @@ import { TouchableOpacity, TouchableOpacityProps, StyleSheet, ActivityIndicator,
 import { colors, radius, spacing, shadows } from '../../tokens';
 import { AppText } from '../AppText';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface PrimaryButtonProps extends TouchableOpacityProps {
   label: string;
   loading?: boolean;
-  variant?: 'filled' | 'surface'; // 'surface' for Google-style buttons
+  variant?: 'filled' | 'surface' | 'danger';
   icon?: keyof typeof MaterialIcons.glyphMap | 'google';
   iconPosition?: 'left' | 'right';
 }
@@ -22,29 +23,22 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   disabled,
   ...props
 }) => {
+  const isFilled = variant === 'filled';
   const isSurface = variant === 'surface';
+  const isDanger = variant === 'danger';
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.container,
-        isSurface ? styles.surfaceContainer : styles.filledContainer,
-        disabled && styles.disabled,
-        style
-      ]}
-      disabled={disabled || loading}
-      activeOpacity={0.8}
-      {...props}
-    >
+  // Content Component
+  const content = (
+    <View style={styles.content}>
       {loading ? (
-        <ActivityIndicator color={isSurface ? colors.primary : colors.surface} />
+        <ActivityIndicator color={isFilled ? colors.surface : colors.primary} />
       ) : (
-        <View style={styles.content}>
+        <>
           {icon && iconPosition === 'left' && (
             <MaterialIcons
               name={icon === 'google' ? 'language' : icon as any}
               size={20}
-              color={isSurface ? colors.primary : colors.surface}
+              color={isFilled ? colors.surface : isDanger ? colors.danger : colors.primary}
               style={[styles.icon, { marginRight: spacing.sm }]}
             />
           )}
@@ -52,7 +46,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             variant="subheading"
             style={[
               styles.text,
-              isSurface ? styles.surfaceText : styles.filledText
+              isFilled ? styles.filledText : isDanger ? styles.dangerText : styles.surfaceText
             ]}
           >
             {label}
@@ -61,34 +55,74 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             <MaterialIcons
               name={icon === 'google' ? 'language' : icon as any}
               size={20}
-              color={isSurface ? colors.primary : colors.surface}
+              color={isFilled ? colors.surface : isDanger ? colors.danger : colors.primary}
               style={[styles.icon, { marginLeft: spacing.sm }]}
             />
           )}
-        </View>
+        </>
       )}
+    </View>
+  );
+
+  const containerStyle = [
+    styles.container,
+    isSurface && styles.surfaceContainer,
+    isDanger && styles.surfaceContainer,
+    disabled && styles.disabled,
+    style
+  ];
+
+  if (isFilled && !disabled) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        disabled={loading}
+        {...props}
+        style={[style, shadows.md]} // Apply shadow to wrapper for gradient
+      >
+        <LinearGradient
+          colors={[colors.primaryGradientStart, colors.primaryGradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.container, styles.gradientContainer]}
+        >
+          {content}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={containerStyle}
+      disabled={disabled || loading}
+      activeOpacity={0.8}
+      {...props}
+    >
+      {content}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 9999,
+    borderRadius: radius.full,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 56,
     width: '100%',
-    ...shadows.md,
   },
-  filledContainer: {
-    backgroundColor: colors.primary,
+  gradientContainer: {
+    borderRadius: radius.full,
+    width: '100%',
   },
   surfaceContainer: {
     backgroundColor: colors.surface,
-    borderWidth: 1, // Optional, looks clean without too
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.divider, // Subtle border mainly
+    ...shadows.sm,
   },
   disabled: {
     backgroundColor: colors.disabled,
@@ -97,17 +131,22 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   icon: {
-    marginRight: spacing.sm,
+    //
   },
   text: {
     fontWeight: '700',
+    textAlign: 'center',
   },
   filledText: {
     color: colors.surface,
   },
   surfaceText: {
     color: colors.textPrimary,
+  },
+  dangerText: {
+    color: colors.danger,
   }
 });

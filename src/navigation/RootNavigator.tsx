@@ -1,6 +1,11 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { OnboardingExamplesScreen } from '../screens/OnboardingExamplesScreen';
+import { OnboardingExampleDetailScreen } from '../screens/OnboardingExampleDetailScreen';
+import { OnboardingCustomCreateScreen } from '../screens/OnboardingCustomCreateScreen';
+import { OnboardingCustomReviewScreen } from '../screens/OnboardingCustomReviewScreen';
+import { FeedbackScreen } from '../screens/FeedbackScreen';
 
 // Screens
 // Screens
@@ -11,6 +16,7 @@ import { EmailLoginScreen } from '../screens/auth/EmailLoginScreen';
 
 import { Onboarding1PositioningScreen } from '../screens/Onboarding1PositioningScreen';
 import { Onboarding2IdentityScreen } from '../screens/Onboarding2IdentityScreen';
+import { Onboarding2PeriodScreen } from '../screens/Onboarding2PeriodScreen';
 import { Onboarding3ExpectationsScreen } from '../screens/Onboarding3ExpectationsScreen';
 import { Onboarding4ProgressSignalsScreen } from '../screens/Onboarding4ProgressSignalsScreen';
 import { Onboarding5BaselineScreen } from '../screens/Onboarding5BaselineScreen';
@@ -42,8 +48,14 @@ export type RootStackParamList = {
     Login: undefined;
 
     // Onboarding (7 steps - new progress-based flow)
+    OnboardingExamples: undefined;
+
+    OnboardingExampleDetail: { exampleId: string };
+    OnboardingCustomCreate: undefined;
+    OnboardingCustomReview: { plan: any };
     Onboarding1Positioning: { resultIntent?: 'NEW_PLAN' };
     Onboarding2Identity: { resultIntent?: 'NEW_PLAN' };
+    Onboarding2Period: { resultIntent?: 'NEW_PLAN' };
     Onboarding3Expectations: { objective: string; resultIntent?: 'NEW_PLAN' };
     Onboarding4ProgressSignals: { objective: string; resultIntent?: 'NEW_PLAN' };
     Onboarding5Baseline: { objective: string; signals: any[]; resultIntent?: 'NEW_PLAN' };
@@ -67,7 +79,9 @@ export type RootStackParamList = {
     SelectAvatar: undefined;
     EditPlan: { planId: string; objectiveName: string };
     Ideas: undefined;
+    Ideas: undefined;
     ArticleDetail: { article: FocusArticle };
+    Feedback: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -107,10 +121,16 @@ export const RootNavigator = () => {
                             <Stack.Screen name="Ideas" component={IdeasScreen} options={{ presentation: 'modal' }} />
                             <Stack.Screen name="SignalDetail" component={SignalDetailScreen} />
                             <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
+                            <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ presentation: 'modal' }} />
 
                             {/* Enable Onboarding screens for "New Plan" flow */}
                             <Stack.Screen name="Onboarding1Positioning" component={Onboarding1PositioningScreen} />
+                            <Stack.Screen name="OnboardingExamples" component={OnboardingExamplesScreen} />
+                            <Stack.Screen name="OnboardingExampleDetail" component={OnboardingExampleDetailScreen} />
+                            <Stack.Screen name="OnboardingCustomCreate" component={OnboardingCustomCreateScreen} />
+                            <Stack.Screen name="OnboardingCustomReview" component={OnboardingCustomReviewScreen} />
                             <Stack.Screen name="Onboarding2Identity" component={Onboarding2IdentityScreen} />
+                            <Stack.Screen name="Onboarding2Period" component={Onboarding2PeriodScreen} />
                             <Stack.Screen name="Onboarding3Expectations" component={Onboarding3ExpectationsScreen} />
                             <Stack.Screen name="Onboarding4ProgressSignals" component={Onboarding4ProgressSignalsScreen} />
                             <Stack.Screen name="Onboarding5Baseline" component={Onboarding5BaselineScreen} />
@@ -125,7 +145,10 @@ export const RootNavigator = () => {
                         /* Onboarding Flow (7 steps) */
                         <>
                             <Stack.Screen name="Onboarding1Positioning" component={Onboarding1PositioningScreen} />
+                            <Stack.Screen name="OnboardingCustomCreate" component={OnboardingCustomCreateScreen} />
+                            <Stack.Screen name="OnboardingCustomReview" component={OnboardingCustomReviewScreen} />
                             <Stack.Screen name="Onboarding2Identity" component={Onboarding2IdentityScreen} />
+                            <Stack.Screen name="Onboarding2Period" component={Onboarding2PeriodScreen} />
                             <Stack.Screen name="Onboarding3Expectations" component={Onboarding3ExpectationsScreen} />
                             <Stack.Screen name="Onboarding4ProgressSignals" component={Onboarding4ProgressSignalsScreen} />
                             <Stack.Screen name="Onboarding5Baseline" component={Onboarding5BaselineScreen} />
@@ -148,7 +171,12 @@ export const RootNavigator = () => {
 
                         {/* Onboarding screens available before auth */}
                         <Stack.Screen name="Onboarding1Positioning" component={Onboarding1PositioningScreen} />
+                        <Stack.Screen name="OnboardingExamples" component={OnboardingExamplesScreen} />
+                        <Stack.Screen name="OnboardingExampleDetail" component={OnboardingExampleDetailScreen} />
+                        <Stack.Screen name="OnboardingCustomCreate" component={OnboardingCustomCreateScreen} />
+                        <Stack.Screen name="OnboardingCustomReview" component={OnboardingCustomReviewScreen} />
                         <Stack.Screen name="Onboarding2Identity" component={Onboarding2IdentityScreen} />
+                        <Stack.Screen name="Onboarding2Period" component={Onboarding2PeriodScreen} />
                         <Stack.Screen name="Onboarding3Expectations" component={Onboarding3ExpectationsScreen} />
                         <Stack.Screen name="Onboarding4ProgressSignals" component={Onboarding4ProgressSignalsScreen} />
                         <Stack.Screen name="Onboarding5Baseline" component={Onboarding5BaselineScreen} />

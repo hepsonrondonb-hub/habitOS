@@ -165,7 +165,7 @@ export const Onboarding6ActionsScreen = () => {
                         >
                             <MaterialIcons name="add-circle-outline" size={24} color={colors.primary} />
                             <AppText variant="subheading" style={styles.createButtonText}>
-                                Crear mi propio hábito
+                                Crear mi propia acción
                             </AppText>
                         </TouchableOpacity>
                     )}

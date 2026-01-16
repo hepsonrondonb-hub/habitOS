@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Alert, ScrollView, Platform } from 'react-native';
 import { AppScreen, AppText, PrimaryButton, AppTextInput } from '../../design-system/components';
-import { colors, spacing, radius } from '../../design-system/tokens';
+import { colors, spacing, radius, shadows } from '../../design-system/tokens';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { MaterialIcons } from '@expo/vector-icons';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, OAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export const EmailLoginScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -20,6 +26,69 @@ export const EmailLoginScreen = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [resetSent, setResetSent] = useState(false);
+
+    // --- Social Auth Config ---
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        iosClientId: '767887801604-otrciamfcj4240lte0k67ksnq69tlqn1.apps.googleusercontent.com',
+        webClientId: '1005567233426-oauvec04kaj4mttfaflk55du5jntdnal.apps.googleusercontent.com',
+        androidClientId: '1005567233426-f6g2co1tr9ivkq09pgdugqo2v1cas7i9.apps.googleusercontent.com',
+        // explicit redirectUri removed to allow native scheme usage
+    });
+
+    useEffect(() => {
+        if (response?.type === 'success') {
+            const { id_token } = response.params;
+            const credential = GoogleAuthProvider.credential(id_token);
+            handleSocialSignIn(credential, 'Google');
+        } else if (response?.type === 'error') {
+            console.error('Google Auth Error:', response.error);
+            setError('Error en autenticación con Google');
+        }
+    }, [response]);
+
+    const handleGoogleLogin = () => {
+        setError(null);
+        promptAsync();
+    };
+
+    const handleAppleLogin = async () => {
+        setError(null);
+        try {
+            const credential = await AppleAuthentication.signInAsync({
+                requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                ],
+            });
+
+            const provider = new OAuthProvider('apple.com');
+            const authCredential = provider.credential({
+                idToken: credential.identityToken!,
+            });
+
+            handleSocialSignIn(authCredential, 'Apple');
+
+        } catch (e: any) {
+            if (e.code === 'ERR_REQUEST_CANCELED') {
+                // User canceled
+            } else {
+                console.error('Apple Login Error:', e);
+                setError('Error al iniciar con Apple.');
+            }
+        }
+    };
+
+    const handleSocialSignIn = async (credential: any, providerName: string) => {
+        setLoading(true);
+        try {
+            await signInWithCredential(auth, credential);
+            // Success handled by AuthContext
+        } catch (err: any) {
+            console.error('Firebase Social Login Error:', err);
+            setError(`Error al iniciar sesión con ${providerName}.`);
+            setLoading(false);
+        }
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -135,6 +204,36 @@ export const EmailLoginScreen = () => {
                             loading={loading}
                         />
                     </View>
+
+                    {/* Social Login Divider */}
+                    <View style={styles.dividerRow}>
+                        <View style={styles.divider} />
+                        <AppText variant="caption" color={colors.textSecondary} style={styles.orText}>o continúa con</AppText>
+                        <View style={styles.divider} />
+                    </View>
+
+                    {/* Social Buttons */}
+                    <View style={styles.socialButtonsContainer}>
+                        {Platform.OS === 'ios' && (
+                            <AppleAuthentication.AppleAuthenticationButton
+                                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                                cornerRadius={radius.full}
+                                style={styles.appleButton}
+                                onPress={handleAppleLogin}
+                            />
+                        )}
+
+                        <TouchableOpacity
+                            style={[styles.googleButton]}
+                            onPress={handleGoogleLogin}
+                            disabled={!request || loading}
+                        >
+                            <MaterialIcons name="language" size={24} color={colors.textPrimary} style={{ marginRight: spacing.sm }} />
+                            <AppText variant="subheading" style={{ fontWeight: '600' }}>Google</AppText>
+                        </TouchableOpacity>
+                    </View>
+
                 </View>
 
                 <View style={styles.footer}>
@@ -180,6 +279,38 @@ const styles = StyleSheet.create({
         marginTop: -spacing.sm, // Pull up closer to input
         marginBottom: spacing.lg,
         paddingVertical: spacing.xs,
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: spacing.xl,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.divider,
+    },
+    orText: {
+        marginHorizontal: spacing.md,
+    },
+    socialButtonsContainer: {
+        gap: spacing.md,
+    },
+    appleButton: {
+        width: '100%',
+        height: 56,
+        marginBottom: spacing.sm,
+    },
+    googleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 56,
+        borderRadius: radius.full,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.divider,
+        ...shadows.sm,
     },
     footer: {
         alignItems: 'center',

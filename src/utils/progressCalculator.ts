@@ -27,6 +27,7 @@ export interface RawAction {
 // Result Types
 export interface SignalStat {
     id: string; // Document ID
+    signalId: string; // Catalog ID or Custom ID
     catalogId: string;
     name: string;
     coverage: number;
@@ -34,8 +35,7 @@ export interface SignalStat {
     trendType: 'improving' | 'stable' | 'irregular' | 'no_pattern';
     recentAvg: number;
     formattedStatus: string; // "Mejorando lentamente", etc.
-    dataPoints: number[]; // For chart (sparse or filled? let's return sparse points or filled zero? Layout expects array. Let's return sparse objects or just values mapped to timeline)
-    // The UI components TrendChart expects number array. We should normalize this.
+    dataPoints: number[]; // For chart
     chartData: number[]; // Normalized for the period
 }
 
@@ -44,6 +44,7 @@ export interface OverviewStats {
     totalActions: number;
     presenceRatio: number;
     planLoad: number;
+    objectiveProgress: number; // 0-100
     trendSummary: string; // "Tendencia general: X"
     trendDescription: string;
 }
@@ -106,6 +107,7 @@ export const calculateOverviewStats = (
         totalActions,
         presenceRatio,
         planLoad,
+        objectiveProgress: 0, // To be filled by aggregator
         trendSummary: '', // To be filled by aggregator
         trendDescription: '' // To be filled by aggregator
     };
@@ -198,6 +200,7 @@ export const calculateSignalStats = (
 
     return {
         id: signal.id,
+        signalId: signal.signalId,
         catalogId: signal.signalId,
         name: signal.name,
         coverage,
@@ -210,13 +213,14 @@ export const calculateSignalStats = (
     };
 };
 
-export const aggregateOverviewTrend = (signalStats: SignalStat[]): { summary: string; description: string } => {
+export const aggregateOverviewTrend = (signalStats: SignalStat[]): { summary: string; description: string; objectiveProgress: number } => {
     const validSignals = signalStats.filter(s => s.coverage >= 3);
 
     if (validSignals.length === 0) {
         return {
             summary: "Tendencia general: Aún sin patrón claro",
-            description: "Aún estamos construyendo tu progreso. Vuelve en unos días."
+            description: "Aún estamos construyendo tu progreso. Vuelve en unos días.",
+            objectiveProgress: 0
         };
     }
 
@@ -254,11 +258,33 @@ export const aggregateOverviewTrend = (signalStats: SignalStat[]): { summary: st
         bestStatus = first[0];
     }
 
+    // Calculate Objective Progress (Average of signal averages)
+    // Scale 1-5 -> 0-100: (val - 1) * 25
+    let totalProgress = 0;
+    validSignals.forEach(s => {
+        // Use recentAvg for current status, max 5, min 1
+        const val = Math.max(1, Math.min(5, s.recentAvg));
+        const pct = (val - 1) * 25;
+        totalProgress += pct;
+    });
+    const objectiveProgress = validSignals.length > 0 ? totalProgress / validSignals.length : 0;
+
     return {
         summary: `Tendencia general: ${bestStatus.split(':')[0]}`, // Remove prefix if any
-        description: getTrendDescription(bestStatus)
+        description: getTrendDescription(bestStatus),
+        objectiveProgress // Return this new metric
     };
 };
+
+// Update return type of aggregateOverviewTrend helper in useProgressData if explicitly typed there, 
+// OR just rely on TS inference. 
+// Ideally I should update the function signature return type here.
+// But it was implicit. Let's make it explicit if I can find the signature line.
+// The signature is: export const aggregateOverviewTrend = ... : { summary: string; description: string }
+// I need to update that signature line too. I'll do it in a separate edit or merge.
+// Wait, I can't merge non-contiguous efficiently without `multi_replace`. 
+// I'll update the signature and content in one go if possible, or just the body and signature.
+// Currently I am replacing the BODY of the function. I need to replace the signature too.
 
 const getTrendDescription = (status: string): string => {
     switch (status) {

@@ -1,7 +1,8 @@
 export const radius = {
-    sm: 8,
-    md: 12,
-    lg: 16,
+    sm: 12,
+    md: 16,
+    lg: 24,
+    xl: 32, // New super round
     full: 9999,
 } as const;
 

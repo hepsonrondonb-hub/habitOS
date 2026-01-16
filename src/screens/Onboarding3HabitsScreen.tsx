@@ -46,8 +46,8 @@ const HABIT_SUGGESTIONS: Record<Intent, SuggestedHabit[]> = {
         { id: 'fitness_3', name: 'Rutina básica de fuerza', time: '3 veces por semana', icon: 'sports-gymnastics' }
     ],
     consistency: [
-        { id: 'consistency_1', name: 'Cumplir 1 hábito aunque sea mínimo', time: 'Todos los días', icon: 'check-circle' },
-        { id: 'consistency_2', name: 'Revisar hábitos al final del día', time: 'Antes de dormir', icon: 'fact-check' },
+        { id: 'consistency_1', name: 'Cumplir 1 acción aunque sea mínima', time: 'Todos los días', icon: 'check-circle' },
+        { id: 'consistency_2', name: 'Revisar acciones al final del día', time: 'Antes de dormir', icon: 'fact-check' },
         { id: 'consistency_3', name: 'No romper la racha dos días seguidos', time: 'Siempre', icon: 'trending-up' }
     ]
 };
@@ -161,7 +161,7 @@ export const Onboarding3HabitsScreen = () => {
                     >
                         <MaterialIcons name="add-circle-outline" size={24} color={colors.primary} />
                         <AppText variant="subheading" style={styles.createHabitText}>
-                            Crear hábito propio
+                            Crear acción propia
                         </AppText>
                     </TouchableOpacity>
                 </View>

@@ -38,52 +38,106 @@ export const Onboarding7ClosureScreen = () => {
                     return;
                 }
 
-                // 1. Create User Objective
-                const objectiveRef = await addDoc(collection(db, 'user_objectives'), {
-                    userId: user.uid,
-                    objectiveType: data.objective,
-                    active: true,
-                    createdAt: serverTimestamp()
-                });
+                // CHECK FOR CUSTOM PLAN (AI FLOW)
+                if (data.customPlan) {
+                    const plan = data.customPlan;
 
-                // 2. Create Habits (Actions)
-                // Filter catalog actions by selected IDs
-                const selectedHabits = catalogActions.filter(a => data.selectedActions.includes(a.id));
-                const habitPromises = selectedHabits.map(action => {
-                    return addDoc(collection(db, 'habits'), {
+                    // A) Save Objective
+                    const objectivesRef = collection(db, 'user_objectives');
+                    const objectiveDoc = await addDoc(objectivesRef, {
                         userId: user.uid,
-                        objectiveId: objectiveRef.id, // Link to the specific objective instance
-                        habitId: action.id, // Catalog ID
-                        name: action.name,
-                        icon: action.icon,
-                        type: 'simple', // defaulting to simple
-                        frequency: [0, 1, 2, 3, 4, 5, 6], // default to daily? Or specific?
-                        isActive: true,
+                        objectiveType: 'custom',
+                        title: plan.objective,
+                        active: true,
+                        periodMonths: data.periodMonths || 3,
+                        startDate: data.startDate ? new Date(data.startDate) : serverTimestamp(),
+                        endDate: data.endDate ? new Date(data.endDate) : null,
                         createdAt: serverTimestamp()
                     });
-                });
+                    const objectiveId = objectiveDoc.id;
 
-                // 3. Create Progress Signals
-                const selectedSignals = catalogSignals.filter(s => data.signals.includes(s.id));
-                const signalPromises = selectedSignals.map(signal => {
-                    return addDoc(collection(db, 'progress_signals'), {
+                    // B) Save Actions (AI Suggested)
+                    const habitsRef = collection(db, 'habits');
+                    const saveActions = plan.actions.map((action: any) =>
+                        addDoc(habitsRef, {
+                            userId: user.uid,
+                            objectiveId: objectiveId,
+                            name: action.name,
+                            type: 'simple',
+                            frequency_type: (action.frequency || 'daily').toLowerCase(),
+                            frequency_days: [],
+                            icon: action.icon || 'star',
+                            isActive: true,
+                            active: true,
+                            createdAt: serverTimestamp()
+                        })
+                    );
+
+                    // C) Save Signals (AI Criteria)
+                    const signalsRef = collection(db, 'progress_signals');
+                    const saveSignals = plan.measurableCriteria.map((criteria: string) =>
+                        addDoc(signalsRef, {
+                            userId: user.uid,
+                            objectiveId: objectiveId,
+                            name: criteria,
+                            signalId: 'custom_ai',
+                            signalType: 'custom',
+                            active: true,
+                            createdAt: serverTimestamp()
+                        })
+                    );
+
+                    await Promise.all([...saveActions, ...saveSignals]);
+
+                } else {
+                    // --- STANDARD PLAN SAVING ---
+                    // 1. Create User Objective
+                    const objectiveRef = await addDoc(collection(db, 'user_objectives'), {
                         userId: user.uid,
-                        objectiveId: objectiveRef.id,
-                        signalId: signal.id,
+                        objectiveType: data.objective,
                         active: true,
                         createdAt: serverTimestamp()
                     });
-                });
 
-                // 4. Save Baseline
-                const baselinePromise = data.baseline ? addDoc(collection(db, 'baselines'), {
-                    userId: user.uid,
-                    objectiveId: objectiveRef.id,
-                    value: data.baseline,
-                    createdAt: serverTimestamp()
-                }) : Promise.resolve();
+                    // 2. Create Habits (Actions)
+                    // Filter catalog actions by selected IDs
+                    const selectedHabits = catalogActions.filter(a => data.selectedActions.includes(a.id));
+                    const habitPromises = selectedHabits.map(action => {
+                        return addDoc(collection(db, 'habits'), {
+                            userId: user.uid,
+                            objectiveId: objectiveRef.id,
+                            habitId: action.id,
+                            name: action.name,
+                            icon: action.icon,
+                            type: 'simple',
+                            frequency: [0, 1, 2, 3, 4, 5, 6],
+                            isActive: true,
+                            createdAt: serverTimestamp()
+                        });
+                    });
 
-                await Promise.all([...habitPromises, ...signalPromises, baselinePromise]);
+                    // 3. Create Progress Signals
+                    const selectedSignals = catalogSignals.filter(s => data.signals.includes(s.id));
+                    const signalPromises = selectedSignals.map(signal => {
+                        return addDoc(collection(db, 'progress_signals'), {
+                            userId: user.uid,
+                            objectiveId: objectiveRef.id,
+                            signalId: signal.id,
+                            active: true,
+                            createdAt: serverTimestamp()
+                        });
+                    });
+
+                    // 4. Save Baseline
+                    const baselinePromise = data.baseline ? addDoc(collection(db, 'baselines'), {
+                        userId: user.uid,
+                        objectiveId: objectiveRef.id,
+                        value: data.baseline,
+                        createdAt: serverTimestamp()
+                    }) : Promise.resolve();
+
+                    await Promise.all([...habitPromises, ...signalPromises, baselinePromise]);
+                }
 
                 // Navigate home
                 navigation.navigate('Main');
@@ -96,8 +150,6 @@ export const Onboarding7ClosureScreen = () => {
                         onboardingCompleted: true
                     });
                 }
-                // Navigation handled by AuthContext or Router logic usually
-                // Force Main just in case
                 navigation.navigate('Main');
             }
         } catch (error) {

@@ -37,7 +37,7 @@ export const FocusScreen = () => {
                         </AppText>
                     </View>
                     <View style={styles.iconBadge}>
-                        <MaterialIcons name="menu-book" size={20} color="#3B82F6" />
+                        <MaterialIcons name="menu-book" size={20} color={colors.primary} />
                     </View>
                 </View>
 
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: '#EFF6FF',
+        backgroundColor: colors.primarySoft,
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: spacing.md,

@@ -1,24 +1,34 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { AppScreen, AppText, Card, PrimaryButton } from '../design-system/components';
-import { colors, spacing, radius } from '../design-system/tokens';
+import { colors, spacing, radius, shadows } from '../design-system/tokens';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TrendChart } from '../design-system/components/Charts/TrendChart';
 import { SignalData } from '../hooks/useProgressData';
+import { db } from '../config/firebase'; // Make sure this path is correct
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '../store/AuthContext';
 
 type DetailRouteProp = RouteProp<{ params: { signalData: SignalData; period: number; objectiveId: string } }, 'params'>;
 
 export const SignalDetailScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const route = useRoute<DetailRouteProp>();
+    const { user } = useAuth();
 
-    // Fallback if accessed incorrectly, though unlikely with strict typing
+    // Fallback if accessed incorrectly
     if (!route.params?.signalData) return null;
 
-    const { signalData, period } = route.params;
+    const { signalData, period, objectiveId } = route.params;
+
+    // Check-in State
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedValue, setSelectedValue] = useState<number | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     // Mock frequency data (last 7 days of the period for the dots visualization)
     const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
@@ -27,6 +37,28 @@ export const SignalDetailScreen = () => {
         active: i % 2 === 0 || i === 5 // Random pattern
     }));
 
+    const handleSaveCheckIn = async () => {
+        if (selectedValue === null || !user) return;
+        setSaving(true);
+        try {
+            await addDoc(collection(db, 'check_ins'), {
+                userId: user.uid,
+                objectiveId: objectiveId,
+                signalId: signalData.signalId, // Use the catalog ID (e.g. 'energy_level')
+                value: selectedValue,
+                date: new Date().toISOString().split('T')[0], // Today's date YYYY-MM-DD
+                timestamp: serverTimestamp()
+            });
+            setSuccess(true);
+            setSelectedValue(null);
+        } catch (error) {
+            console.error("Error saving check-in:", error);
+            Alert.alert("Error", "No se pudo guardar el registro.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <AppScreen safeArea backgroundColor={colors.background}>
             {/* Header */}
@@ -34,8 +66,10 @@ export const SignalDetailScreen = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <MaterialIcons name="arrow-back" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
-                <View>
-                    <AppText variant="subheading" style={styles.headerTitle}>{signalData.name}</AppText>
+                <View style={{ flex: 1, marginHorizontal: spacing.md }}>
+                    <AppText variant="subheading" style={styles.headerTitle} numberOfLines={1}>
+                        {signalData.name}
+                    </AppText>
                     <AppText variant="caption" color={colors.textSecondary}>Últimos {period} días</AppText>
                 </View>
                 <TouchableOpacity style={styles.menuButton}>
@@ -106,20 +140,107 @@ export const SignalDetailScreen = () => {
                     </View>
                 </Card>
 
-                {/* Adjustments (Optional) */}
-                <View style={styles.adjustmentSection}>
-                    <AppText variant="body" color={colors.textSecondary} centered style={{ marginBottom: spacing.md, lineHeight: 22 }}>
-                        Tu ritmo ha sido constante. Podrías probar <AppText variant="body" style={{ color: colors.primary }}>simplificar tus acciones</AppText> para mantener esta inercia sin esfuerzo.
-                    </AppText>
+                {/* Actions Footer */}
+                <View style={styles.footerSection}>
                     <PrimaryButton
-                        label="Ajustar acciones"
-                        onPress={() => navigation.navigate('CreateHabit', { objectiveId: route.params.objectiveId })}
-                        variant="filled" // Assuming primary button exists
+                        label="Registrar avance"
+                        onPress={() => setModalVisible(true)}
+                        variant="filled"
+                        fullWidth
+                        style={{ marginBottom: spacing.md }}
                     />
+
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('CreateHabit', { objectiveId: route.params.objectiveId })}
+                        style={styles.secondaryButton}
+                    >
+                        <AppText color={colors.primary} style={{ fontWeight: '600' }}>Ajustar acciones</AppText>
+                    </TouchableOpacity>
+
+                    <AppText variant="caption" color={colors.textSecondary} centered style={{ marginTop: spacing.md, paddingHorizontal: spacing.lg }}>
+                        Tu ritmo es constante. Si lo deseas, puedes simplificar tus acciones.
+                    </AppText>
                 </View>
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Check-In / Success Modal */}
+            <Modal
+                transparent={true}
+                visible={modalVisible}
+                animationType="fade"
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
+                    <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+                        {success ? (
+                            <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+                                <MaterialIcons name="check-circle" size={64} color={colors.primary} style={{ marginBottom: spacing.md }} />
+                                <AppText variant="heading" style={{ marginBottom: spacing.sm }}>¡Registrado!</AppText>
+                                <AppText variant="body" color={colors.textSecondary} centered>
+                                    Tu progreso ha sido guardado correctamente.
+                                </AppText>
+                                <PrimaryButton
+                                    label="Continuar"
+                                    onPress={() => {
+                                        setModalVisible(false);
+                                        setSuccess(false);
+                                    }}
+                                    variant="filled"
+                                    style={{ marginTop: spacing.xl, width: '100%' }}
+                                />
+                            </View>
+                        ) : (
+                            <>
+                                <AppText variant="heading" style={{ marginBottom: spacing.xs }}>Registrar Progreso</AppText>
+                                <AppText variant="body" color={colors.textSecondary} style={{ marginBottom: spacing.lg }}>
+                                    ¿Cómo calificarías "{signalData.name}" hoy?
+                                </AppText>
+
+                                {/* Scale 1-5 */}
+                                <View style={styles.scaleContainer}>
+                                    {[1, 2, 3, 4, 5].map((val) => (
+                                        <TouchableOpacity
+                                            key={val}
+                                            style={[
+                                                styles.scaleItem,
+                                                selectedValue === val && styles.scaleItemActive
+                                            ]}
+                                            onPress={() => setSelectedValue(val)}
+                                        >
+                                            <AppText
+                                                style={[
+                                                    styles.scaleText,
+                                                    selectedValue === val && styles.scaleTextActive
+                                                ]}
+                                            >
+                                                {val.toString()}
+                                            </AppText>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                                <View style={styles.labels}>
+                                    <AppText variant="caption" color={colors.textSecondary}>Bajo</AppText>
+                                    <AppText variant="caption" color={colors.textSecondary}>Alto</AppText>
+                                </View>
+
+                                <View style={styles.modalButtons}>
+                                    <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalBtnCancel}>
+                                        <AppText color={colors.textSecondary}>Cancelar</AppText>
+                                    </TouchableOpacity>
+                                    <PrimaryButton
+                                        label={saving ? "Guardando..." : "Guardar Registro"}
+                                        onPress={handleSaveCheckIn}
+                                        disabled={selectedValue === null || saving}
+                                        style={{ flex: 1 }}
+                                    />
+                                </View>
+                            </>
+                        )}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </AppScreen>
     );
 };
@@ -220,7 +341,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     processCard: {
-        backgroundColor: '#1E40AF', // Deep blue
+        backgroundColor: colors.brandDark, // Deep brand color
         marginBottom: spacing.xxl,
         borderWidth: 0,
     },
@@ -239,7 +360,68 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         fontSize: 10,
     },
-    adjustmentSection: {
+    footerSection: {
+        marginTop: spacing.xl,
+        paddingHorizontal: spacing.md,
         alignItems: 'center',
+    },
+    secondaryButton: {
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.lg,
+    },
+    modalContent: {
+        backgroundColor: colors.surface,
+        borderRadius: radius.lg,
+        padding: spacing.xl,
+        width: '100%',
+        ...shadows.lg,
+    },
+    scaleContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: spacing.xs,
+    },
+    scaleItem: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#F3F4F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    scaleItemActive: {
+        backgroundColor: colors.primary,
+    },
+    scaleText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.textPrimary,
+    },
+    scaleTextActive: {
+        color: colors.surface,
+    },
+    labels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: spacing.lg,
+        paddingHorizontal: 4,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginTop: spacing.md
+    },
+    modalBtnCancel: {
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
     }
 });

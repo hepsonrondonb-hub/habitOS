@@ -22,30 +22,28 @@ export const SignalCard: React.FC<SignalCardProps> = ({
 }) => {
     return (
         <Card style={styles.card} noPadding>
-            <TouchableOpacity style={styles.content} onPress={onPress} activeOpacity={0.7}>
-                <View style={styles.mainRow}>
-                    <View style={styles.textContainer}>
-                        <AppText variant="subheading" style={styles.name}>
-                            {name}
-                        </AppText>
-                        <AppText variant="body" style={styles.outcome}>
-                            {outcome}
-                        </AppText>
-                    </View>
-                    <View style={styles.chartContainer}>
-                        <Sparkline
-                            data={data}
-                            width={100}
-                            height={40}
-                            color={colors.primary}
-                        />
-                    </View>
-                </View>
-
-                <View style={styles.footer}>
-                    <AppText variant="caption" color={colors.textSecondary}>
+            <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
+                {/* Left: Text Info */}
+                <View style={styles.infoColumn}>
+                    <AppText variant="subheading" style={styles.name} numberOfLines={1}>
+                        {name}
+                    </AppText>
+                    <AppText variant="caption" color={colors.primary} style={styles.outcome}>
+                        {outcome}
+                    </AppText>
+                    <AppText variant="caption" color={colors.textSecondary} style={styles.context}>
                         {context}
                     </AppText>
+                </View>
+
+                {/* Right: Chart */}
+                <View style={styles.chartColumn}>
+                    <Sparkline
+                        data={data}
+                        width={90}
+                        height={40}
+                        color={colors.primary}
+                    />
                 </View>
             </TouchableOpacity>
         </Card>
@@ -56,36 +54,32 @@ const styles = StyleSheet.create({
     card: {
         marginBottom: spacing.md,
     },
-    content: {
-        padding: spacing.lg,
-    },
-    mainRow: {
+    container: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center', // Align top or center? Sparkline is usually center aligned with text block
-        marginBottom: spacing.md,
+        alignItems: 'center',
+        padding: spacing.lg,
+        paddingVertical: spacing.md,
     },
-    textContainer: {
+    infoColumn: {
         flex: 1,
         paddingRight: spacing.md,
     },
-    chartContainer: {
-        width: 100,
-        height: 40,
+    chartColumn: {
+        alignItems: 'flex-end',
         justifyContent: 'center',
     },
     name: {
         fontWeight: '700',
-        marginBottom: 4,
+        fontSize: 15,
+        marginBottom: 2,
     },
     outcome: {
-        color: colors.primary,
-        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 4,
+        fontSize: 12,
     },
-    footer: {
-        borderTopWidth: 1,
-        borderTopColor: colors.divider, // Optional, looks clean without too
-        paddingTop: spacing.sm,
-        // Image doesn't show border, just separate text.
+    context: {
+        fontSize: 11,
+        opacity: 0.8,
     },
 });

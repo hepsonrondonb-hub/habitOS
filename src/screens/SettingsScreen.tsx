@@ -16,6 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 interface Plan {
     id: string; // user_objective id
     objectiveType: string;
+    title?: string;
     active: boolean;
     createdAt: any;
 }
@@ -47,11 +48,9 @@ const PlanItem = ({
     onToggle,
     onEdit
 }: {
-    plan: Plan;
-    onToggle: () => void;
     onEdit: () => void;
 }) => {
-    const label = OBJECTIVE_LABELS[plan.objectiveType] || plan.objectiveType;
+    const label = plan.title || OBJECTIVE_LABELS[plan.objectiveType] || plan.objectiveType;
 
     return (
         <Card style={styles.planCard} noPadding>
@@ -159,7 +158,7 @@ export const SettingsScreen = () => {
     };
 
     const handleEditPlan = (plan: Plan) => {
-        const label = OBJECTIVE_LABELS[plan.objectiveType] || plan.objectiveType;
+        const label = plan.title || OBJECTIVE_LABELS[plan.objectiveType] || plan.objectiveType;
         navigation.navigate('EditPlan', { planId: plan.id, objectiveName: label });
     };
 
@@ -313,6 +312,28 @@ export const SettingsScreen = () => {
                     </View>
                 )}
 
+                {/* Feedback Section */}
+                <TouchableOpacity
+                    style={styles.feedbackButton}
+                    onPress={() => navigation.navigate('Feedback')}
+                    activeOpacity={0.8}
+                >
+                    <View style={styles.feedbackContent}>
+                        <View style={[styles.iconBox, { backgroundColor: '#FFF7ED' }]}>
+                            <MaterialIcons name="lightbulb" size={20} color="#EA580C" />
+                        </View>
+                        <View style={{ flex: 1, paddingHorizontal: spacing.md }}>
+                            <AppText variant="body" style={{ fontWeight: '700', color: '#9A3412' }}>
+                                Tu opinión nos importa
+                            </AppText>
+                            <AppText variant="caption" style={{ color: '#C2410C' }}>
+                                ¿Cómo podemos mejorar? Comparte tu idea.
+                            </AppText>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color="#C2410C" />
+                    </View>
+                </TouchableOpacity>
+
                 {/* Account Section */}
                 <AppText variant="subheading" style={styles.sectionTitle}>Cuenta</AppText>
                 <Card style={styles.accountCard}>
@@ -465,5 +486,19 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: colors.divider,
         marginLeft: spacing.lg,
+    },
+    feedbackButton: {
+        marginTop: spacing.xl,
+        marginBottom: spacing.lg,
+        backgroundColor: '#FFEDD5', // Orange/Amber tint
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#FED7AA',
+    },
+    feedbackContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
     }
 });

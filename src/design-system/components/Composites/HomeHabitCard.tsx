@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Card } from '../Card';
 import { AppText } from '../AppText';
 import { CircularCheckbox } from '../Inputs/CircularCheckbox';
@@ -18,26 +18,23 @@ interface HomeHabitCardProps {
     onEdit?: () => void;
 }
 
-export const HomeHabitCard: React.FC<HomeHabitCardProps> = ({
-    name,
-    type,
-    icon,
-    description,
-    completed,
-    readOnly = false,
-    onToggle,
-    onPress,
-    onEdit
-}) => {
+export const HomeHabitCard = React.memo((props: HomeHabitCardProps) => {
+    const {
+        name,
+        type,
+        icon,
+        description,
+        completed,
+        readOnly = false,
+        onToggle,
+        onPress,
+        onEdit
+    } = props;
+
     return (
         <Card style={styles.container} onPress={readOnly ? undefined : onPress}>
             {/* Left Icon */}
             <View style={[styles.iconContainer, { backgroundColor: completed ? colors.primary : '#DBEAFE' }]}>
-                {/* Visual change: if completed, icon is white on blue? Or keep blue on light blue? 
-                   Design usually: Icon separate from status. Status is the check.
-                   Let's keep icon consistent: blue on light blue, or maybe grey if inactive?
-                   Let's stick to Blue on Light Blue for active identity.
-                */}
                 <MaterialIcons
                     name={icon as any}
                     size={24}
@@ -77,19 +74,25 @@ export const HomeHabitCard: React.FC<HomeHabitCardProps> = ({
                     </TouchableOpacity>
                 )}
 
-                <TouchableOpacity
-                    onPress={onToggle}
-                    activeOpacity={0.7}
+                <Pressable
+                    onPress={(e) => {
+                        e.stopPropagation && e.stopPropagation(); // Try to stop propagation if supported
+                        onToggle();
+                    }}
                     disabled={readOnly}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    hitSlop={20} // Generous hit area
+                    style={({ pressed }) => ({
+                        opacity: pressed ? 0.7 : 1,
+                        padding: 4, // Visual padding
+                        zIndex: 10, // Ensure it sits on top
+                    })}
                 >
-                    {/* Reuse CircularCheckbox but ensure it looks like the design (Check / Empty Circle) */}
                     <CircularCheckbox checked={completed} disabled={readOnly} />
-                </TouchableOpacity>
+                </Pressable>
             </View>
         </Card>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

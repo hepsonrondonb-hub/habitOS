@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
     },
     activeContainer: {
-        backgroundColor: '#1E40AF', // Dark blue as in design
+        backgroundColor: colors.primary, // Brand color (Sage/Green)
     },
     dayName: {
         fontSize: 12,

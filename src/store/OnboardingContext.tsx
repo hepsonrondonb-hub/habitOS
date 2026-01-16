@@ -8,6 +8,10 @@ interface OnboardingData {
     signals: string[];
     baseline: number | null;
     selectedActions: string[];
+    periodMonths: number | null;
+    startDate: string | null; // ISO String for easier serialization
+    endDate: string | null;
+    customPlan?: any; // To store AI generated plan
 }
 
 interface OnboardingContextType {
@@ -16,6 +20,8 @@ interface OnboardingContextType {
     setSignals: (signals: string[]) => void;
     setBaseline: (baseline: number) => void;
     setSelectedActions: (actions: string[]) => void;
+    setPeriod: (months: number, startDate: string, endDate: string) => void;
+    setCustomPlan: (plan: any) => void;
     resetOnboarding: () => void;
 }
 
@@ -25,7 +31,10 @@ const initialData: OnboardingData = {
     objective: null,
     signals: [],
     baseline: null,
-    selectedActions: []
+    selectedActions: [],
+    periodMonths: null,
+    startDate: null,
+    endDate: null
 };
 
 export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -47,6 +56,14 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
         setData(prev => ({ ...prev, selectedActions: actions }));
     };
 
+    const setPeriod = (months: number, startDate: string, endDate: string) => {
+        setData(prev => ({ ...prev, periodMonths: months, startDate, endDate }));
+    };
+
+    const setCustomPlan = (plan: any) => {
+        setData(prev => ({ ...prev, customPlan: plan }));
+    };
+
     const resetOnboarding = () => {
         setData(initialData);
     };
@@ -59,6 +76,8 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
                 setSignals,
                 setBaseline,
                 setSelectedActions,
+                setPeriod,
+                setCustomPlan,
                 resetOnboarding
             }}
         >

@@ -2,35 +2,44 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card } from '../Card';
 import { AppText } from '../AppText';
-import { colors, spacing, radius } from '../../tokens';
-import { MaterialIcons } from '@expo/vector-icons';
+import { colors, spacing, radius, shadows } from '../../tokens';
+import { CircularProgress } from '../Charts/CircularProgress';
 
 interface TrendSummaryCardProps {
     title: string;
     description: string;
     icon?: string;
+    progress?: number;
 }
 
 export const TrendSummaryCard: React.FC<TrendSummaryCardProps> = ({
     title,
     description,
-    icon = "auto-awesome"
+    progress = 0
 }) => {
     return (
         <Card style={styles.card} noPadding>
-            <View style={styles.banner}>
-                <MaterialIcons name={icon as any} size={32} color={colors.primary} style={{ opacity: 0.6 }} />
-            </View>
-            <View style={styles.content}>
-                <AppText variant="caption" color={colors.textSecondary} style={styles.label}>
-                    RESUMEN DE TENDENCIA
-                </AppText>
-                <AppText variant="heading" style={styles.title}>
-                    {title}
-                </AppText>
-                <AppText variant="body" color={colors.textSecondary} style={styles.description}>
-                    {description}
-                </AppText>
+            <View style={styles.container}>
+                <View style={styles.textColumn}>
+                    <AppText variant="caption" color={colors.textSecondary} style={styles.label}>
+                        NIVEL DE ESTADO
+                    </AppText>
+                    <AppText variant="heading" style={styles.title}>
+                        {title}
+                    </AppText>
+                    <AppText variant="body" color={colors.textSecondary} style={styles.description}>
+                        {description}
+                    </AppText>
+                </View>
+
+                <View style={styles.chartColumn}>
+                    <CircularProgress
+                        size={80}
+                        progress={progress}
+                        strokeWidth={8}
+                        color={colors.primary}
+                    />
+                </View>
             </View>
         </Card>
     );
@@ -38,19 +47,21 @@ export const TrendSummaryCard: React.FC<TrendSummaryCardProps> = ({
 
 const styles = StyleSheet.create({
     card: {
-        overflow: 'hidden',
-        borderWidth: 0,
-        backgroundColor: colors.surface, // Or maybe white with shadow
         marginBottom: spacing.lg,
+        ...shadows.md, // Pop slightly more
     },
-    banner: {
-        height: 80,
-        backgroundColor: '#E0E7FF', // Light blue/indigo
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.lg,
+        gap: spacing.md,
+    },
+    textColumn: {
+        flex: 1,
+    },
+    chartColumn: {
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    content: {
-        padding: spacing.lg,
     },
     label: {
         letterSpacing: 1,
@@ -59,10 +70,12 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     title: {
-        fontSize: 20,
+        fontSize: 18, // Slightly smaller than 20 for balance
+        fontWeight: '700',
         marginBottom: spacing.sm,
     },
     description: {
-        lineHeight: 24,
+        lineHeight: 20,
+        fontSize: 13,
     }
 });

@@ -29,10 +29,10 @@ export const Onboarding2IdentityScreen = () => {
 
         // Save objective to context
         // casting to any because context expects specific union type but we have string from DB
+        // casting to any because context expects specific union type but we have string from DB
         setObjective(selectedIntent as any);
 
-        navigation.navigate('Onboarding3Expectations', {
-            objective: selectedIntent as any,
+        navigation.navigate('Onboarding2Period', {
             resultIntent: route.params?.resultIntent // Propagate intent
         } as any);
     };
@@ -91,36 +91,55 @@ export const Onboarding2IdentityScreen = () => {
                                 ]}>
                                     <MaterialIcons
                                         name={option.icon as any}
-                                        size={28}
+                                        size={24}
                                         color={selectedIntent === option.id ? colors.primary : colors.textSecondary}
                                     />
                                 </View>
-                                <View style={styles.textContainer}>
-                                    <AppText
-                                        variant="subheading"
-                                        style={[
-                                            styles.optionLabel,
-                                            selectedIntent === option.id && styles.optionLabelSelected
-                                        ]}
-                                    >
-                                        {option.label}
-                                    </AppText>
-                                    <AppText
-                                        variant="caption"
-                                        color={selectedIntent === option.id ? colors.primary : colors.textSecondary}
-                                        style={styles.optionDescription}
-                                    >
-                                        {option.description}
-                                    </AppText>
-                                </View>
+
+                                <AppText
+                                    variant="subheading"
+                                    style={[
+                                        styles.optionLabel,
+                                        selectedIntent === option.id && styles.optionLabelSelected
+                                    ]}
+                                    numberOfLines={2}
+                                >
+                                    {option.label}
+                                </AppText>
+                                {/* Description hidden in grid for compactness */}
+
                                 {selectedIntent === option.id && (
                                     <View style={styles.checkmark}>
-                                        <MaterialIcons name="check-circle" size={24} color={colors.primary} />
+                                        <MaterialIcons name="check-circle" size={20} color={colors.primary} />
                                     </View>
                                 )}
                             </TouchableOpacity>
                         ))
                     )}
+
+                    {/* Custom Objective Option (Always visible) */}
+                    <TouchableOpacity
+                        style={[
+                            styles.customCard // distinct style
+                        ]}
+                        onPress={() => navigation.navigate('OnboardingCustomCreate' as any)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={[styles.customIconContainer]}>
+                                <MaterialIcons name="auto-awesome" size={24} color={colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <AppText variant="subheading" style={styles.optionLabel}>
+                                    Crear mi propio objetivo
+                                </AppText>
+                                <AppText variant="caption" color={colors.textSecondary}>
+                                    La IA diseñará tu plan
+                                </AppText>
+                            </View>
+                            <MaterialIcons name="arrow-forward" size={20} color={colors.textSecondary} />
+                        </View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Bottom spacing for button */}
@@ -173,50 +192,76 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     optionsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: spacing.md,
+        justifyContent: 'space-between',
     },
     optionCard: {
         backgroundColor: colors.surface,
         borderRadius: 16,
-        padding: spacing.lg,
-        flexDirection: 'row',
-        alignItems: 'center',
+        padding: spacing.md,
+        width: '47%', // roughly half minus gap
+        alignItems: 'flex-start', // Align left for vertical stack
         borderWidth: 2,
         borderColor: 'transparent',
+        minHeight: 110,
     },
     optionCardSelected: {
         borderColor: colors.primary,
         backgroundColor: colors.primarySoft,
     },
     iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 12,
+        width: 40,
+        height: 40,
+        borderRadius: 10,
         backgroundColor: colors.background,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: spacing.md,
+        marginBottom: spacing.sm,
     },
     iconContainerSelected: {
         backgroundColor: colors.surface,
     },
     textContainer: {
-        flex: 1,
+        flex: 1, // Not used in grid but keeping for safety if referenced elsewhere
     },
     optionLabel: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
         marginBottom: 2,
+        lineHeight: 20,
     },
     optionLabelSelected: {
         color: colors.primary,
     },
     optionDescription: {
-        fontSize: 13,
-        lineHeight: 18,
+        display: 'none', // Hide description for grid
     },
     checkmark: {
-        marginLeft: spacing.sm,
+        position: 'absolute',
+        top: 10,
+        right: 10,
+    },
+    customCard: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.primary + '60',
+        borderStyle: 'dashed',
+        padding: spacing.md,
+        minHeight: 0,
+    },
+    customIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        backgroundColor: colors.primarySoft,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.md,
     },
     footer: {
         position: 'absolute',

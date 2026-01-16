@@ -21,7 +21,7 @@ export const ObjectiveSelector: React.FC<ObjectiveSelectorProps> = ({
     selectedId,
     onSelect
 }) => {
-    if (objectives.length <= 1) return null;
+    if (objectives.length === 0) return null;
 
     return (
         <ScrollView
@@ -60,7 +60,11 @@ export const ObjectiveSelector: React.FC<ObjectiveSelectorProps> = ({
                                 isSelected && styles.selectedText
                             ]}
                         >
-                            {obj.label}
+                            {(() => {
+                                const label = obj.label;
+                                if (label.length <= 22) return label;
+                                return label.substring(0, 20).trim() + '...';
+                            })()}
                         </AppText>
                     </TouchableOpacity>
                 );

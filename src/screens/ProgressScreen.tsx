@@ -25,7 +25,7 @@ export const ProgressScreen = () => {
     const [selectedObjectiveId, setSelectedObjectiveId] = useState<string>('focus'); // Default, usually derived from context
 
     // Data Hook (Real)
-    const { loading, trend, overview, signals, objectives, selectedObjectiveId: hookSelectedId } = useProgressData(selectedPeriod, selectedObjectiveId);
+    const { loading, trend, overview, signals, topInsight, objectives, selectedObjectiveId: hookSelectedId } = useProgressData(selectedPeriod, selectedObjectiveId);
 
     // Sync local selected ID if hook changes it (initial load)
     // Note: this might cause a render loop if not careful. 
@@ -94,7 +94,25 @@ export const ProgressScreen = () => {
                             <TrendSummaryCard
                                 title={trend.summary}
                                 description={trend.description}
+                                progress={overview?.objectiveProgress}
                             />
+                        )}
+
+                        {/* Top Insight Highlight */}
+                        {topInsight && (
+                            <View style={styles.insightHighlight}>
+                                <View style={styles.insightIconContainer}>
+                                    <MaterialIcons name="insights" size={20} color={colors.primary} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <AppText variant="caption" color={colors.primary} style={{ fontWeight: '700', marginBottom: 2 }}>
+                                        INSIGHT CLAVE: {topInsight.signalName.toUpperCase()}
+                                    </AppText>
+                                    <AppText variant="body" style={{ fontSize: 13 }}>
+                                        {topInsight.text}
+                                    </AppText>
+                                </View>
+                            </View>
                         )}
 
                         {/* Empty State for Signals */}
@@ -198,5 +216,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: spacing.xl,
+    },
+    insightHighlight: {
+        flexDirection: 'row',
+        backgroundColor: colors.primarySoft,
+        padding: spacing.md,
+        borderRadius: spacing.md,
+        marginBottom: spacing.lg,
+        alignItems: 'flex-start',
+        gap: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.brandMint,
+    },
+    insightIconContainer: {
+        backgroundColor: colors.surface,
+        padding: 6,
+        borderRadius: 8,
     }
 });

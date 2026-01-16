@@ -65,7 +65,7 @@ export const useProgressData = (periodDays: PeriodOption, selectedObjectiveId?: 
             const objs = snapshot.docs.map(doc => ({
                 id: doc.id,
                 type: doc.data().objectiveType,
-                label: OBJECTIVE_LABELS[doc.data().objectiveType] || doc.data().objectiveType
+                label: doc.data().title || OBJECTIVE_LABELS[doc.data().objectiveType] || doc.data().objectiveType
             }));
 
             // Deduplicate? Should be unique active ones.
@@ -156,13 +156,32 @@ export const useProgressData = (periodDays: PeriodOption, selectedObjectiveId?: 
         let unsubLogs: () => void;
         let unsubCheckins: () => void;
 
-        // 3a. Action Logs (habitCompletions)
+        // 3a. Action Completions (New Schema)
         const logsQ = query(
-            collection(db, 'habitCompletions'),
+            collection(db, 'action_completions'),
             where('userId', '==', user.uid)
         );
         unsubLogs = onSnapshot(logsQ, (snapshot) => {
-            setActionLogs(snapshot.docs.map(d => d.data()));
+            const logs = snapshot.docs.map(d => ({
+                habitId: d.data().actionId, // Map actionId back to habitId for calc util compatibility
+                date: d.data().periodKey,   // PeriodKey is used as date? No, calculator expects date string.
+                // Wait, calculator expects 'date' (YYYY-MM-DD). 
+                // action_completions has 'periodKey' (YYYY-MM-DD) for Daily actions.
+                // For weekly/monthly, periodKey is different. 
+                // We need 'completedAt' which includes date, or parse periodKey.
+                // Let's use periodKey if it looks like a date, or derived date.
+                // Actually, existing calculator likely filters by date string exact match.
+                // If we want to support daily view, periodKey is perfect.
+                // If we want to support aggregated, we might need more.
+                // For now, assume periodKey IS the date for daily actions.
+                // For compatibility, let's map periodKey -> date.
+                ...d.data(),
+                date: d.data().periodKey // Assuming periodKey is YYYY-MM-DD for daily
+            }));
+            setActionLogs(logs);
+        }, (error) => {
+            console.error("Error listening to action completions:", error);
+            // Don't hang functionality completely, just log
         });
 
         // 3b. Checkins
@@ -174,6 +193,9 @@ export const useProgressData = (periodDays: PeriodOption, selectedObjectiveId?: 
         unsubCheckins = onSnapshot(checkinsQ, (snapshot) => {
             setCheckIns(snapshot.docs.map(d => d.data()));
             setLoading(false);
+        }, (error) => {
+            console.error("Error listening to check-ins:", error);
+            setLoading(false); // Ensure we stop loading even on error
         });
 
         return () => {
@@ -231,7 +253,7 @@ export const useProgressData = (periodDays: PeriodOption, selectedObjectiveId?: 
         const computedSignals = rawSignals.map(signal => {
             // Resolve name
             const catalogDef = catalogSignals.find(c => c.id === signal.signalId);
-            const name = catalogDef?.name || "Señal desconocida";
+            const name = catalogDef?.name || signal.name || "Señal desconocida";
 
             // Calculate Base Stats
             const baseStats = calculateSignalStats(
@@ -269,11 +291,30 @@ export const useProgressData = (periodDays: PeriodOption, selectedObjectiveId?: 
         const aggregate = aggregateOverviewTrend(computedSignals);
         overview.trendSummary = aggregate.summary;
         overview.trendDescription = aggregate.description;
+        overview.objectiveProgress = aggregate.objectiveProgress;
+
+        // Find Top Insight (Strongest Relation)
+        // We only care about positive relations for the "Highlight" (helping the user).
+        // Or significant ones.
+        let topInsight = null;
+        const significantSignals = computedSignals.filter(s => s.hasRelation && Math.abs(s.relationDelta) >= 0.3);
+
+        if (significantSignals.length > 0) {
+            // Sort by absolute strength
+            significantSignals.sort((a, b) => Math.abs(b.relationDelta) - Math.abs(a.relationDelta));
+            const best = significantSignals[0];
+            topInsight = {
+                signalName: best.name,
+                text: best.insight,
+                delta: best.relationDelta
+            };
+        }
 
         return {
             overview,
             signals: computedSignals,
-            trend: aggregate
+            trend: aggregate,
+            topInsight
         };
 
     }, [rawSignals, rawActions, actionLogs, checkIns, catalogSignals, periodDays, resolvedObjectiveId]);

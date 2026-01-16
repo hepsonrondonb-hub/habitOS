@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "eternal-crater",
+    "name": "Avitio",
     "slug": "eternal-crater",
     "owner": "hepson",
-    "scheme": "eternal-crater",
+    "scheme": "avitio",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,7 +16,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.eternalcrater"
+      "bundleIdentifier": "com.anonymous.eternalcrater",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.767887801604-otrciamfcj4240lte0k67ksnq69tlqn1"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -36,7 +46,9 @@
       }
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-web-browser",
+      "expo-font"
     ]
   }
 }

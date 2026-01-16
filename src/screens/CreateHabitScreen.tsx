@@ -9,6 +9,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../store/AuthContext';
 import { db } from '../config/firebase';
 import { collection, addDoc, updateDoc, doc, getDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { FrequencyType } from '../types/Action';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateHabit'>;
 type RouteParams = RouteProp<RootStackParamList, 'CreateHabit'>;
@@ -61,6 +62,15 @@ export const CreateHabitScreen = () => {
     const [loadingObjectives, setLoadingObjectives] = useState(true);
 
     const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]); // Default daily
+    const [frequencyType, setFrequencyType] = useState<FrequencyType>('daily'); // New State
+
+    // Helper to toggle between Frequency Types
+    const handleFrequencyTypeChange = (type: FrequencyType) => {
+        setFrequencyType(type);
+        // Reset specific days if not daily/weekly? 
+        // For now, keep selectedDays as they are or default them.
+        if (type === 'daily') setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+    };
     const [loading, setLoading] = useState(false);
     const [loadingHabit, setLoadingHabit] = useState(isEditMode);
 
@@ -107,6 +117,7 @@ export const CreateHabitScreen = () => {
                         setName(data.name || '');
                         setType(data.type || 'simple');
                         setSelectedDays(data.frequency || []);
+                        setFrequencyType(data.frequency_type || 'daily'); // Load or Default
 
                         // If editing, use the stored objectiveID
                         // Ensure it exists in active list? Ideally yes, but if archived maybe not.
@@ -164,7 +175,7 @@ export const CreateHabitScreen = () => {
         }
 
         if (!selectedObjectiveId) {
-            Alert.alert('Falta objetivo', 'Debes tener un objetivo activo para crear hábitos.');
+            Alert.alert('Falta objetivo', 'Debes tener un objetivo activo para crear acciones.');
             return;
         }
 
@@ -187,9 +198,12 @@ export const CreateHabitScreen = () => {
                 name: name.trim(),
                 type: type,
                 objectiveId: selectedObjectiveId,
-                category: selectedObjective.objectiveType, // Mapping legacy category field to type
-                frequency: selectedDays,
+                category: selectedObjective.objectiveType,
+                frequency: selectedDays, // Kept for legacy compatibility / daily specific days
+                frequency_type: frequencyType, // New Field
+                frequency_interval: 1, // Default
                 icon: getIconForType(type, selectedObjective.objectiveType),
+                updatedAt: serverTimestamp(),
             };
 
             if (isEditMode && habitId) {
@@ -203,6 +217,8 @@ export const CreateHabitScreen = () => {
                     ...habitData,
                     userId: user.uid,
                     isActive: true,
+                    status: 'active', // New Status Field
+                    completed_count: 0,
                     createdAt: serverTimestamp()
                 });
             }
@@ -210,7 +226,7 @@ export const CreateHabitScreen = () => {
             navigation.goBack();
         } catch (error) {
             console.error('Error saving habit:', error);
-            Alert.alert('Error', 'No se pudo guardar el hábito. Intenta nuevamente.');
+            Alert.alert('Error', 'No se pudo guardar la acción. Intenta nuevamente.');
         } finally {
             setLoading(false);
         }
@@ -242,7 +258,7 @@ export const CreateHabitScreen = () => {
                     <MaterialIcons name="close" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <AppText variant="heading" style={styles.headerTitle}>
-                    {isEditMode ? 'Editar hábito' : 'Nuevo hábito'}
+                    {isEditMode ? 'Editar acción' : 'Nueva acción'}
                 </AppText>
                 <View style={{ width: 40 }} />
             </View>
@@ -262,16 +278,15 @@ export const CreateHabitScreen = () => {
 
                 {/* Type Selector */}
                 <View style={styles.section}>
-                    <AppText variant="subheading" style={styles.label}>Tipo de hábito</AppText>
+                    <AppText variant="subheading" style={styles.label}>Tipo de acción</AppText>
                     <HabitTypeSelector selectedType={type} onSelect={handleTypeChange} />
                 </View>
 
-                {/* Info Card for Training */}
                 {type === 'training' && (
                     <View style={styles.infoCard}>
-                        <MaterialIcons name="lightbulb" size={20} color="#2563EB" style={{ marginRight: spacing.sm }} />
+                        <MaterialIcons name="lightbulb" size={20} color={colors.primary} style={{ marginRight: spacing.sm }} />
                         <AppText variant="caption" color={colors.textSecondary} style={{ flex: 1 }}>
-                            Este hábito te permitirá adjuntar <AppText variant="caption" color="#2563EB" style={{ fontWeight: '700' }}>rutinas de ejercicio</AppText> específicas y llevar un registro de tus pesos.
+                            Esta acción te permitirá adjuntar <AppText variant="caption" color={colors.primary} style={{ fontWeight: '700' }}>rutinas de ejercicio</AppText> específicas y llevar un registro de tus pesos.
                         </AppText>
                     </View>
                 )}
@@ -329,13 +344,43 @@ export const CreateHabitScreen = () => {
 
                 {/* Frequency */}
                 <View style={styles.section}>
-                    <View style={styles.rowBetween}>
-                        <AppText variant="subheading" style={styles.label}>Frecuencia</AppText>
-                        <AppText variant="caption" color="#2563EB" style={{ fontWeight: '700' }}>
-                            {selectedDays.length} DÍAS / SEMANA
-                        </AppText>
-                    </View>
-                    <DaySelector selectedDays={selectedDays} onToggleDay={toggleDay} />
+                    <AppText variant="subheading" style={styles.label}>Frecuencia</AppText>
+
+                    {/* Frequency Type Tabs */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsContainer}>
+                        {(['daily', 'weekly', 'monthly', 'once'] as FrequencyType[]).map(ft => {
+                            const labels: Record<string, string> = { daily: 'Diaria', weekly: 'Semanal', monthly: 'Mensual', once: 'Una vez' };
+                            const isSelected = frequencyType === ft;
+                            return (
+                                <TouchableOpacity
+                                    key={ft}
+                                    style={[styles.pill, isSelected ? styles.pillSelected : null]}
+                                    onPress={() => handleFrequencyTypeChange(ft)}
+                                >
+                                    <AppText style={[styles.pillText, isSelected ? styles.pillTextSelected : null]}>
+                                        {labels[ft]}
+                                    </AppText>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+
+                    {/* Show Day Selector only if Daily (Specific days) or Weekly (Specific days option) */}
+                    {/* User Requirement: "Weekly: 1 (default)... days_of_week... In V1 leave null (not use)" - But we have a day selector already. */}
+                    {/* Let's keep Day Selector visible only if Daily is selected, to allow "Mon/Wed/Fri" style daily habits. */}
+                    {/* For Weekly, we assume "Once a week" for now as per requirements "frequency_interval: 1" */}
+
+                    {frequencyType === 'daily' && (
+                        <View style={{ marginTop: spacing.md }}>
+                            <View style={styles.rowBetween}>
+                                <AppText variant="caption" color={colors.textSecondary}>Días específicos</AppText>
+                                <AppText variant="caption" color={colors.primary} style={{ fontWeight: '700' }}>
+                                    {selectedDays.length} DÍAS
+                                </AppText>
+                            </View>
+                            <DaySelector selectedDays={selectedDays} onToggleDay={toggleDay} />
+                        </View>
+                    )}
                 </View>
 
                 <View style={{ height: 100 }} />
@@ -344,7 +389,7 @@ export const CreateHabitScreen = () => {
             {/* Footer Button */}
             <View style={styles.footer}>
                 <PrimaryButton
-                    label={isEditMode ? 'Guardar cambios' : 'Guardar hábito'}
+                    label={isEditMode ? 'Guardar cambios' : 'Guardar acción'}
                     onPress={handleSave}
                     loading={loading}
                     disabled={activeObjectives.length === 0}
@@ -396,7 +441,7 @@ const styles = StyleSheet.create({
     },
     infoCard: {
         flexDirection: 'row',
-        backgroundColor: '#EFF6FF', // Blue 50
+        backgroundColor: colors.primarySoft, // Match brand
         padding: spacing.md,
         borderRadius: 12,
         marginBottom: spacing.xl,
